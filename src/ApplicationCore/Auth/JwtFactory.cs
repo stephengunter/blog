@@ -14,7 +14,9 @@ namespace ApplicationCore.Auth
 {
 	public interface IJwtFactory
 	{
-		Task<AccessTokenResponse> GenerateEncodedToken(User user, OAuth oAuth, IList<string> roles = null);
+        Task<AccessTokenResponse> GenerateEncodedToken(User user, IList<string> roles = null);
+
+        Task<AccessTokenResponse> GenerateEncodedToken(User user, OAuth oAuth, IList<string> roles = null);
     }
 
 
@@ -28,6 +30,37 @@ namespace ApplicationCore.Auth
             _jwtTokenHandler = jwtTokenHandler;
             _jwtOptions = jwtOptions.Value;
             ThrowIfInvalidOptions(_jwtOptions);
+        }
+
+        public async Task<AccessTokenResponse> GenerateEncodedToken(User user, IList<string> roles = null)
+        {
+            string id = user.Id;
+            string userName = user.UserName;
+            string name = user.Name;
+
+            var identity = GenerateClaimsIdentity(id, userName);
+            var claims = new[]
+            {
+                 new Claim(JwtRegisteredClaimNames.Sub, userName),
+                 new Claim("name", name),
+                 new Claim("roles", roles.IsNullOrEmpty() ? "" : String.Join(",", roles)),
+                 new Claim(JwtRegisteredClaimNames.Jti, await _jwtOptions.JtiGenerator()),
+                 new Claim(JwtRegisteredClaimNames.Iat, ToUnixEpochDate(_jwtOptions.IssuedAt).ToString(), ClaimValueTypes.Integer64),
+                 identity.FindFirst(Helpers.Constants.Strings.JwtClaimIdentifiers.Rol),
+                 identity.FindFirst(Helpers.Constants.Strings.JwtClaimIdentifiers.Id)
+             };
+
+            // Create the JWT security token and encode it.
+            var jwt = new JwtSecurityToken(
+                _jwtOptions.Issuer,
+                _jwtOptions.Audience,
+                claims,
+                _jwtOptions.NotBefore,
+                _jwtOptions.Expiration,
+                _jwtOptions.SigningCredentials);
+
+            return new AccessTokenResponse(_jwtTokenHandler.WriteToken(jwt), (int)_jwtOptions.ValidFor.TotalSeconds);
+
         }
 
         public async Task<AccessTokenResponse> GenerateEncodedToken(User user, OAuth oAuth, IList<string> roles = null)

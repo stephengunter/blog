@@ -19,11 +19,11 @@ namespace Web
 		{
 			var host = CreateWebHostBuilder(args).Build();
 
-			var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-			if (environment.ToLower() == "development")
-			{
-				Task.Run(() => AppDBSeed.EnsureSeedData(host.Services).Wait());
-			}
+			//var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+			//if (environment.ToLower() == "development")
+			//{
+			//	Task.Run(() => AppDBSeed.EnsureSeedData(host.Services).Wait());
+			//}
 
 			host.Run();
 		}

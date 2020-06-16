@@ -14,6 +14,9 @@ namespace ApplicationCore.Auth
         public static OAuthProvider GetOAuthProvider(this ClaimsPrincipal cp)
         {
             if (cp == null) return OAuthProvider.Unknown;
+
+            if (cp.Claims.FirstOrDefault(c => c.Type == "provider") == null) return OAuthProvider.Unknown;
+            
             string providerName = cp.Claims.First(c => c.Type == "provider").Value;
 
             OAuthProvider provider = OAuthProvider.Unknown;
@@ -23,6 +26,7 @@ namespace ApplicationCore.Auth
                 else return OAuthProvider.Unknown;
             }
             else return OAuthProvider.Unknown;
+
         }
     }
 }

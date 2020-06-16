@@ -16,7 +16,10 @@ namespace ApplicationCore.Services
 {
 	public interface IAuthService
 	{
+		Task<AuthResponse> CreateTokenAsync(string ipAddress, User user, IList<string> roles = null);
+
 		Task<AuthResponse> CreateTokenAsync(string ipAddress, User user, OAuth oAuth, IList<string> roles = null);
+
 		Task CreateUpdateUserOAuthAsync(string userId, OAuth oAuth);
 
 		ClaimsPrincipal ResolveClaimsFromToken(string accessToken);
@@ -53,6 +56,20 @@ namespace ApplicationCore.Services
 		int RefreshTokenDaysToExpire => _authSettings.RefreshTokenDaysToExpire < 1 ? 5 : _authSettings.RefreshTokenDaysToExpire;
 
 		string SecretKey => _authSettings.SecurityKey;
+
+		public async Task<AuthResponse> CreateTokenAsync(string ipAddress, User user, IList<string> roles = null)
+		{
+			var accessToken = await _jwtFactory.GenerateEncodedToken(user, roles);
+			var refreshToken = _tokenFactory.GenerateToken();
+
+			await SetRefreshTokenAsync(ipAddress, user, refreshToken);
+
+			return new AuthResponse
+			{
+				AccessToken = accessToken,
+				RefreshToken = refreshToken
+			};
+		}
 
 		public async Task<AuthResponse> CreateTokenAsync(string ipAddress, User user, OAuth oAuth, IList<string> roles = null)
 		{

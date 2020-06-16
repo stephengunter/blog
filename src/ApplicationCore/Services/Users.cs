@@ -15,6 +15,7 @@ namespace ApplicationCore.Services
     public interface IUsersService
     {
         Task<User> FindUserByEmailAsync(string email);
+        User FindUserByPhone(string phone);
         Task<User> CreateUserAsync(string email, bool emailConfirmed);
         Task<IList<string>> GetRolesAsync(User user);
 
@@ -38,10 +39,12 @@ namespace ApplicationCore.Services
             _userManager = userManager;
             _roleManager = roleManager;
         }
-
-        
         
         public async Task<User> FindUserByEmailAsync(string email) => await _userManager.FindByEmailAsync(email);
+
+        public User FindUserByPhone(string phone) => _userManager.Users.FirstOrDefault(x => x.PhoneNumber == phone);
+
+
 
         public async Task<User> CreateUserAsync(string email, bool emailConfirmed)
         {

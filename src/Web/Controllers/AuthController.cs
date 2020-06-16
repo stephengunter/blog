@@ -4,18 +4,47 @@ using ApplicationCore.Views;
 using ApplicationCore.Models;
 using ApplicationCore.Auth;
 using ApplicationCore.Services;
+using ApplicationCore.Settings;
+using Microsoft.Extensions.Options;
+
 namespace Web.Controllers
 {
 	public class AuthController : BaseController
 	{
+		private readonly AdminSettings _adminSettings;
 		private readonly IUsersService _usersService;
 		private readonly IAuthService _authService;
 
-
-		public AuthController(IUsersService usersService, IAuthService authService)
+		public AuthController(IOptions<AdminSettings> adminSettings, IUsersService usersService, IAuthService authService)
 		{
+			_adminSettings = adminSettings.Value;
 			_usersService = usersService;
 			_authService = authService;
+		}
+
+		[HttpPost("")]
+		public async Task<ActionResult> Login([FromBody] OAuthLoginRequest model)
+		{
+			var user = _usersService.FindUserByPhone(model.Token);
+
+			if (user == null)
+			{
+				ModelState.AddModelError("auth", "登入失敗.");
+				return BadRequest(ModelState);
+			}
+
+			if(user.Email == _adminSettings.Email)
+			{
+				ModelState.AddModelError("auth", "登入失敗.");
+				return BadRequest(ModelState);
+			}
+
+
+			var roles = await _usersService.GetRolesAsync(user);
+
+			var responseView = await _authService.CreateTokenAsync(RemoteIpAddress, user, roles);
+
+			return Ok(responseView);
 		}
 
 		//POST api/auth/refreshtoken
@@ -30,10 +59,17 @@ namespace Web.Controllers
 			if (!ModelState.IsValid) return BadRequest(ModelState);
 
 			var user = await _usersService.FindUserByIdAsync(userId);
-			var oauth = _authService.FindOAuthByProvider(userId, oauthProvider);
 			var roles = await _usersService.GetRolesAsync(user);
 
-			var responseView = await _authService.CreateTokenAsync(RemoteIpAddress, user, oauth, roles);
+			AuthResponse responseView = null;
+			if (oauthProvider == OAuthProvider.Unknown)
+			{
+				responseView = await _authService.CreateTokenAsync(RemoteIpAddress, user, roles);
+				return Ok(responseView);
+			}
+
+			var oauth = _authService.FindOAuthByProvider(userId, oauthProvider);
+			responseView = await _authService.CreateTokenAsync(RemoteIpAddress, user, oauth, roles);
 
 			return Ok(responseView);
 

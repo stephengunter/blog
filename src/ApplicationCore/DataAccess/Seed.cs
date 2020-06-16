@@ -63,6 +63,7 @@ namespace ApplicationCore.DataAccess
 		static async Task SeedUsers(UserManager<User> userManager)
 		{
 			await CreateUserIfNotExist(userManager, new User {
+				Name = "Stephen",
 				Email = "traders.com.tw@gmail.com",
 				UserName = "traders.com.tw@gmail.com",
 				
@@ -73,6 +74,7 @@ namespace ApplicationCore.DataAccess
 
 			await CreateUserIfNotExist(userManager, new User
 			{
+				Name = "Nora",
 				Email = "nora@gmail.com",
 				UserName = "nora@gmail.com",
 				
